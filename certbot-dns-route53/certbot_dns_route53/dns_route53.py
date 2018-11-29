@@ -91,7 +91,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                     "Unable to find a Route53 hosted zone with id {0}".format(
                         self.conf('zone-id'))
                 )
-            return (zone["HostedZone"]["Name"], zone["HostedZone"]["Id"])
+            return zone["HostedZone"]["Id"]
 
         paginator = self.r53.get_paginator("list_hosted_zones")
         zones = []
