@@ -38,6 +38,11 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.r53 = boto3.client("route53")
         self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
+    @classmethod
+    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
+        super(Authenticator, cls).add_parser_arguments(add)
+        add('zone-id', help='Route53 Zone Id to use for challenge records')
+
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
 
@@ -77,6 +82,17 @@ class Authenticator(dns_common.DNSAuthenticator):
            That is, the id for the zone whose name is the longest parent of the
            domain.
         """
+        if self.conf('zone-id'):
+            zone = self.r53.get_hosted_zone(
+                Id=self.conf('zone-id')
+            )
+            if not zone:
+                raise errors.PluginError(
+                    "Unable to find a Route53 hosted zone with id {0}".format(
+                        self.conf('zone-id'))
+                )
+            return (zone["HostedZone"]["Name"], zone["HostedZone"]["Id"])
+
         paginator = self.r53.get_paginator("list_hosted_zones")
         zones = []
         target_labels = domain.rstrip(".").split(".")
